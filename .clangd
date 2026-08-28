@@ -1,0 +1,4 @@
+CompileFlags:
+  Compiler: /Users/kent/.local/opt/zephyr-sdk-1.0.1/gnu/arm-zephyr-eabi/bin/arm-zephyr-eabi-gcc
+  CompilationDatabase: ../../build
+  Remove: [-fno-reorder-functions, -mfp16-format=ieee, -fno-printf-return-value]
