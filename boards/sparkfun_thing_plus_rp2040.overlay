@@ -1,0 +1,88 @@
+/*
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * SSD1306 128x64 I2C OLED on the Qwiic connector (GP6/GP7, i2c1).
+ * SR602 PIR motion sensor OUT pin on GP16 (header J8, pin 4 - free,
+ * per the Eagle netlist in boards/RP2040_Thing_Plus_Schematic.pdf).
+ * UP/DOWN tactile buttons on GP17/GP18 (J8, pins 5-6), other leg to GND.
+ * TK50 ultrasonic sensor in GPIO mode (J1/J2 both open): TRIG on GP19,
+ * ECHO on GP20 - next free header pins after the motion/button pair.
+ */
+
+#include <zephyr/dt-bindings/input/input-event-codes.h>
+
+/ {
+	chosen {
+		zephyr,display = &ssd1306;
+	};
+
+	motion_sensor: motion_sensor {
+		compatible = "gpio-keys";
+
+		motion0: motion_0 {
+			gpios = <&gpio0 16 GPIO_ACTIVE_HIGH>;
+			zephyr,code = <INPUT_KEY_WAKEUP>;
+			label = "SR602 motion";
+		};
+	};
+
+	buttons: buttons {
+		compatible = "gpio-keys";
+
+		button_up: button_up {
+			gpios = <&gpio0 17 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+			zephyr,code = <INPUT_KEY_UP>;
+			label = "Up";
+		};
+
+		button_down: button_down {
+			gpios = <&gpio0 18 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+			zephyr,code = <INPUT_KEY_DOWN>;
+			label = "Down";
+		};
+	};
+
+	tk50: tk50 {
+		compatible = "hc-sr04";
+		trigger-gpios = <&gpio0 19 GPIO_ACTIVE_HIGH>;
+		echo-gpios = <&gpio0 20 GPIO_ACTIVE_HIGH>;
+	};
+};
+
+/* Shrink the code partition to make room for an NVS storage partition
+ * to persist the user-configured stop distance across reboots.
+ */
+&code_partition {
+	reg = <0x100 (DT_SIZE_M(16) - 0x100 - DT_SIZE_K(16))>;
+};
+
+&flash0 {
+	partitions {
+		storage_partition: partition@ffc000 {
+			compatible = "zephyr,mapped-partition";
+			label = "storage";
+			reg = <(DT_SIZE_M(16) - DT_SIZE_K(16)) DT_SIZE_K(16)>;
+		};
+	};
+};
+
+&i2c1 {
+	ssd1306: ssd1306@3c {
+		compatible = "solomon,ssd1306";
+		reg = <0x3c>;
+		width = <128>;
+		height = <64>;
+		segment-offset = <0>;
+		page-offset = <0>;
+		display-offset = <0>;
+		multiplex-ratio = <63>;
+		segment-remap;
+		com-invdir;
+		prechargep = <0x22>;
+	};
+
+	max17048: max17048@36 {
+		compatible = "maxim,max17048";
+		reg = <0x36>;
+	};
+};
